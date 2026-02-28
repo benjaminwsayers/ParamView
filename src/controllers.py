@@ -11,7 +11,9 @@ class DesignExplorerApp:
 
     def run(self):
         self.sidebar.render()
-        data = self.data_manager.get_data()
-        if data is not None:
-            self.visualizer.data = data
+        raw_data = self.data_manager.get_data()
+        if raw_data is not None:
+            filter_ranges = self.sidebar.get_filter_ranges()
+            filtered = self.data_manager.apply_filters(filter_ranges)
+            self.visualizer.data = filtered
         self.main_display.render()

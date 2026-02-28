@@ -62,16 +62,40 @@ class Sidebar:
         """
         Display range sliders for filtering numeric columns in the dataset.
         """
-        # === Section: Range Sliders ===
         container.header("📊 Filter Data")
 
-        st.slider(
-            "Filter 1",
-            min_value=1,
-            max_value=12,
-            value=1,
-            step=1
-        )
+        if self.data_manager.data is None:
+            container.warning("🔍 Please upload data to filter.")
+            return
+
+        numeric_cols = self.data_manager.get_numeric_columns()
+        if not numeric_cols:
+            container.info("No numeric columns found.")
+            return
+
+        for col in numeric_cols:
+            col_min = float(self.data_manager.data[col].min())
+            col_max = float(self.data_manager.data[col].max())
+            if col_min == col_max:
+                continue
+            container.slider(
+                col,
+                min_value=col_min,
+                max_value=col_max,
+                value=(col_min, col_max),
+                key=f"filter_{col}",
+            )
+
+    def get_filter_ranges(self) -> dict:
+        """Return {column: (min, max)} from current slider session state."""
+        ranges = {}
+        if self.data_manager.data is None:
+            return ranges
+        for col in self.data_manager.get_numeric_columns():
+            key = f"filter_{col}"
+            if key in st.session_state:
+                ranges[col] = st.session_state[key]
+        return ranges
 
     def render(self):
         """
