@@ -11,6 +11,24 @@ class Visualiser:
         self.data = data
         self.modal = Modal(title="", key="details_modal")  # Initialize the modal
 
+    # ------------------------------------------------------------------
+    # Pure selection helpers (stateless, easily unit-tested)
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def toggle_selection(design_idx: int, selected: set) -> set:
+        """Return a new set with design_idx added or removed."""
+        selected = set(selected)
+        if design_idx in selected:
+            selected.discard(design_idx)
+        else:
+            selected.add(design_idx)
+        return selected
+
+    @staticmethod
+    def is_selected(design_idx: int, selected: set) -> bool:
+        return design_idx in selected
+
     def plot_parallel_coordinates(self):
         if self.data is None:
             st.warning("No data available for visualization.")
@@ -139,6 +157,12 @@ class Visualiser:
         # Inject the optimized CSS into the Streamlit app
         st.markdown(hover_css, unsafe_allow_html=True)
 
+        # Initialise selection state
+        if 'selected_designs' not in st.session_state:
+            st.session_state.selected_designs = set()
+
+        selected = st.session_state.selected_designs
+
         # Calculate the number of rows needed
         num_rows = (len(self.data) + num_columns - 1) // num_columns
 
@@ -165,13 +189,15 @@ class Visualiser:
                         encoded = base64.b64encode(image_bytes).decode()
                         image_html = f"data:image/png;base64,{encoded}"
 
+                        border_color = "#f0c040" if self.is_selected(design_idx, selected) else "#ddd"
+
                         # HTML structure for the design card with tooltip pop-out
                         design_card_html = f"""
-                        <div class="design-card">
+                        <div class="design-card" style="border-color:{border_color};">
                             <img src="{image_html}" alt="Design {design_idx + 1}" class="design-image">
                             <div class="tooltip">
                                 <div class="design-overlay-content">
-                                    <H5>Design {design_idx}</H5>   
+                                    <H5>Design {design_idx}</H5>
                                     <strong>Parameters:</strong><br>
                                     {params_html}
                                 </div>
@@ -187,17 +213,15 @@ class Visualiser:
                             with col1:
                                 # "View Details" button with unique key
                                 if st.button("🔍", key=f"view_{design_idx}", use_container_width=True, help=f"View Design {design_idx} Information"):
-                                    # Set the selected design in session state
                                     st.session_state.selected_design = design.to_dict()
-                                    # Open the modal
                                     self.modal.open()
                             with col2:
-                                # "Select Design" button with unique key
-                                if st.button("⭐", key=f"select_{design_idx}", use_container_width=True, help=f"Add Design {design_idx} to Selection"):
-                                    # Set the selected design in session state
-                                    st.session_state.selected_design = design.to_dict()
-                                    # Open the modal
-                                    self.modal.open()
+                                star = "⭐" if self.is_selected(design_idx, selected) else "☆"
+                                if st.button(star, key=f"select_{design_idx}", use_container_width=True, help=f"Toggle Design {design_idx} in shortlist"):
+                                    st.session_state.selected_designs = self.toggle_selection(
+                                        design_idx, st.session_state.selected_designs
+                                    )
+                                    st.rerun()
                             
 
         # Render the modal outside the loop to prevent multiple modals

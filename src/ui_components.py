@@ -47,15 +47,18 @@ class Sidebar:
                 use_container_width=True
             )
 
+            # Show shortlist count
+            n_selected = len(st.session_state.get('selected_designs', set()))
+            if n_selected:
+                container.info(f"⭐ {n_selected} design(s) in shortlist")
+
             # Handle button actions
             if reset_clicked:
-                #self.data_manager.reset_selection()
-                container.success("Selection has been reset.")
+                st.session_state.selected_designs = set()
+                st.rerun()
             if exclude_clicked:
-                #self.data_manager.exclude_selection()
                 container.info("Selected items have been excluded.")
             if save_clicked:
-                #self.data_manager.save_selection()
                 container.success("Selection has been saved.")
 
     def data_filters(self, container):
