@@ -37,6 +37,20 @@ class DataManager:
             if col != 'image_path'
         ]
 
+    def build_export_csv(self, selected_indices: set) -> bytes | None:
+        """Return CSV bytes for the rows at selected_indices.
+
+        Out-of-bounds indices are silently ignored. Returns None if data
+        is None.
+        """
+        if self.data is None:
+            return None
+        valid = sorted(i for i in selected_indices if i < len(self.data))
+        subset = self.data.iloc[valid] if valid else self.data.iloc[[]]
+        buf = __import__('io').BytesIO()
+        subset.to_csv(buf, index=False)
+        return buf.getvalue()
+
     def apply_filters(self, filter_ranges: dict):
         """Return a filtered copy of data based on {column: (min, max)} ranges.
 
