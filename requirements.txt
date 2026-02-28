@@ -5,3 +5,5 @@ plotly
 streamlit-aggrid
 Pillow
 streamlit-modal
+pytest
+pytest-mock
