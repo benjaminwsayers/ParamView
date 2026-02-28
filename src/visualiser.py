@@ -160,15 +160,10 @@ class Visualiser:
                         ]
                         params_html = "<br>".join(params)
 
-                        # Get the image placeholder
-                        image_placeholder = self.get_image_placeholder(design_idx)
-
-                        # If the image_placeholder is bytes, encode it to base64
-                        if isinstance(image_placeholder, bytes):
-                            encoded = base64.b64encode(image_placeholder).decode()
-                            image_html = f"data:image/png;base64,{encoded}"
-                        else:
-                            image_html = image_placeholder  # Assuming it's a valid image path or URL
+                        # Get the image as bytes and encode for embedding
+                        image_bytes = self.get_image_placeholder(design_idx)
+                        encoded = base64.b64encode(image_bytes).decode()
+                        image_html = f"data:image/png;base64,{encoded}"
 
                         # HTML structure for the design card with tooltip pop-out
                         design_card_html = f"""
@@ -228,20 +223,27 @@ class Visualiser:
 
 
     def get_image_placeholder(self, design_idx):
-        """
-        Loads the actual image if available; otherwise, returns a placeholder.
-        """
-        if 'image_path' in self.data.columns and pd.notnull(self.data.iloc[design_idx]['image_path']):
-            image_path = self.data.iloc[design_idx]['image_path']
-            try:
-                # Load and return the image
-                return Image.open(image_path)
-            except Exception as e:
-                st.error(f"Error loading image for Design {design_idx + 1}: {e}")
+        """Return the design image as PNG bytes.
 
-        # If no image is available, return a placeholder
-        img = Image.new('RGB', (200, 200), color=(design_idx * 30 % 255, design_idx * 60 % 255, design_idx * 90 % 255))
+        Loads from image_path column if present and readable; otherwise
+        returns a deterministic coloured placeholder.
+        """
+        if 'image_path' in self.data.columns:
+            image_path = self.data.iloc[design_idx]['image_path']
+            if pd.notnull(image_path):
+                try:
+                    img = Image.open(image_path)
+                    buf = io.BytesIO()
+                    img.save(buf, format='PNG')
+                    return buf.getvalue()
+                except Exception:
+                    pass  # fall through to placeholder
+
+        img = Image.new(
+            'RGB',
+            (200, 200),
+            color=(design_idx * 30 % 255, design_idx * 60 % 255, design_idx * 90 % 255),
+        )
         buf = io.BytesIO()
         img.save(buf, format='PNG')
-        byte_im = buf.getvalue()
-        return byte_im
+        return buf.getvalue()
