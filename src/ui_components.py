@@ -59,7 +59,18 @@ class Sidebar:
             if exclude_clicked:
                 container.info("Selected items have been excluded.")
             if save_clicked:
-                container.success("Selection has been saved.")
+                selected = st.session_state.get('selected_designs', set())
+                csv_bytes = self.data_manager.build_export_csv(selected)
+                if csv_bytes is not None and selected:
+                    container.download_button(
+                        label="⬇️ Download shortlist CSV",
+                        data=csv_bytes,
+                        file_name="shortlist.csv",
+                        mime="text/csv",
+                        key="download_shortlist",
+                    )
+                else:
+                    container.warning("No designs selected to export.")
 
     def data_filters(self, container):
         """
